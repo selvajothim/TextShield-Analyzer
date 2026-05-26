@@ -1,0 +1,845 @@
+# =============================================================================
+#               INTELLIGENT TEXT ANALYSIS SYSTEM
+# =============================================================================
+# PROJECT FEATURES
+# -----------------------------------------------------------------------------
+# ✔ Exact Keyword Matching
+# ✔ Duplicate Sentence Detection
+# ✔ Repeated Phrase Detection
+# ✔ Frequency Count
+# ✔ Match Position Detection
+# ✔ Multiple Pattern Searching Algorithms
+# ✔ Execution Time Comparison
+# ✔ Memory Usage Analysis
+# ✔ Number of Comparisons
+# ✔ Case Sensitive / Case Insensitive Search
+# ✔ Interactive GUI using Tkinter
+# ✔ Line Graph Visualization using Matplotlib
+#
+# ALGORITHMS IMPLEMENTED
+# -----------------------------------------------------------------------------
+# 1. Naive Pattern Searching
+# 2. KMP Algorithm
+# 3. Rabin-Karp Algorithm
+# 4. Boyer-Moore Algorithm
+#
+# REQUIRED LIBRARIES
+# -----------------------------------------------------------------------------
+# pip install matplotlib psutil
+#
+# RUN COMMAND
+# -----------------------------------------------------------------------------
+# python intelligent_text_analysis.py
+# =============================================================================
+
+import tkinter as tk
+from tkinter import filedialog, scrolledtext, messagebox
+import time
+import tracemalloc
+import matplotlib.pyplot as plt
+from collections import defaultdict
+import re
+import os
+
+# =============================================================================
+# GLOBAL PERFORMANCE STORAGE
+# =============================================================================
+
+performance_data = {
+    "Algorithm": [],
+    "Execution Time": [],
+    "Memory Usage": [],
+    "Comparisons": [],
+    "Matches": []
+}
+
+# =============================================================================
+# NAIVE SEARCH
+# =============================================================================
+
+def naive_search(text, pattern):
+
+    n = len(text)
+    m = len(pattern)
+
+    positions = []
+    comparisons = 0
+
+    for i in range(n - m + 1):
+
+        match = True
+
+        for j in range(m):
+
+            comparisons += 1
+
+            if text[i + j] != pattern[j]:
+                match = False
+                break
+
+        if match:
+            positions.append(i)
+
+    return positions, comparisons
+
+
+# =============================================================================
+# KMP SEARCH
+# =============================================================================
+
+def compute_lps(pattern):
+
+    lps = [0] * len(pattern)
+
+    length = 0
+    i = 1
+
+    while i < len(pattern):
+
+        if pattern[i] == pattern[length]:
+
+            length += 1
+            lps[i] = length
+            i += 1
+
+        else:
+
+            if length != 0:
+                length = lps[length - 1]
+            else:
+                lps[i] = 0
+                i += 1
+
+    return lps
+
+
+def kmp_search(text, pattern):
+
+    n = len(text)
+    m = len(pattern)
+
+    lps = compute_lps(pattern)
+
+    positions = []
+    comparisons = 0
+
+    i = 0
+    j = 0
+
+    while i < n:
+
+        comparisons += 1
+
+        if pattern[j] == text[i]:
+
+            i += 1
+            j += 1
+
+        if j == m:
+
+            positions.append(i - j)
+            j = lps[j - 1]
+
+        elif i < n and pattern[j] != text[i]:
+
+            if j != 0:
+                j = lps[j - 1]
+            else:
+                i += 1
+
+    return positions, comparisons
+
+
+# =============================================================================
+# RABIN KARP SEARCH
+# =============================================================================
+
+def rabin_karp_search(text, pattern, prime=101):
+
+    d = 256
+
+    n = len(text)
+    m = len(pattern)
+
+    positions = []
+    comparisons = 0
+
+    h = pow(d, m - 1) % prime
+
+    p = 0
+    t = 0
+
+    for i in range(m):
+
+        p = (d * p + ord(pattern[i])) % prime
+        t = (d * t + ord(text[i])) % prime
+
+    for i in range(n - m + 1):
+
+        comparisons += 1
+
+        if p == t:
+
+            match = True
+
+            for j in range(m):
+
+                comparisons += 1
+
+                if text[i + j] != pattern[j]:
+                    match = False
+                    break
+
+            if match:
+                positions.append(i)
+
+        if i < n - m:
+
+            t = (d * (t - ord(text[i]) * h) +
+                 ord(text[i + m])) % prime
+
+            if t < 0:
+                t += prime
+
+    return positions, comparisons
+
+
+# =============================================================================
+# BOYER MOORE SEARCH
+# =============================================================================
+
+def bad_character_table(pattern):
+
+    table = [-1] * 256
+
+    for i in range(len(pattern)):
+        table[ord(pattern[i])] = i
+
+    return table
+
+
+def boyer_moore_search(text, pattern):
+
+    m = len(pattern)
+    n = len(text)
+
+    bad_char = bad_character_table(pattern)
+
+    positions = []
+    comparisons = 0
+
+    shift = 0
+
+    while shift <= n - m:
+
+        j = m - 1
+
+        while j >= 0 and pattern[j] == text[shift + j]:
+
+            comparisons += 1
+            j -= 1
+
+        if j < 0:
+
+            positions.append(shift)
+
+            shift += (m - bad_char[ord(text[shift + m])]
+                      if shift + m < n else 1)
+
+        else:
+
+            comparisons += 1
+
+            shift += max(1, j - bad_char[ord(text[shift + j])])
+
+    return positions, comparisons
+
+
+# =============================================================================
+# PERFORMANCE MEASUREMENT
+# =============================================================================
+
+def analyze_algorithm(name, algorithm, text, pattern):
+
+    tracemalloc.start()
+
+    start = time.perf_counter()
+
+    positions, comparisons = algorithm(text, pattern)
+
+    end = time.perf_counter()
+
+    current, peak = tracemalloc.get_traced_memory()
+
+    tracemalloc.stop()
+
+    execution_time = end - start
+    memory_usage = peak / 1024
+
+    performance_data["Algorithm"].append(name)
+    performance_data["Execution Time"].append(execution_time)
+    performance_data["Memory Usage"].append(memory_usage)
+    performance_data["Comparisons"].append(comparisons)
+    performance_data["Matches"].append(len(positions))
+
+    return {
+        "positions": positions,
+        "comparisons": comparisons,
+        "execution_time": execution_time,
+        "memory_usage": memory_usage
+    }
+
+
+# =============================================================================
+# DUPLICATE SENTENCE DETECTION
+# =============================================================================
+
+def duplicate_sentences(text):
+
+    sentences = re.split(r'[.!?]', text)
+
+    freq = defaultdict(int)
+
+    for sentence in sentences:
+
+        cleaned = sentence.strip().lower()
+
+        if cleaned:
+            freq[cleaned] += 1
+
+    duplicates = {k: v for k, v in freq.items() if v > 1}
+
+    return duplicates
+
+
+# =============================================================================
+# REPEATED PHRASE DETECTION
+# =============================================================================
+
+def repeated_phrases(text):
+
+    words = text.lower().split()
+
+    phrase_freq = defaultdict(int)
+
+    for i in range(len(words) - 2):
+
+        phrase = " ".join(words[i:i + 3])
+
+        phrase_freq[phrase] += 1
+
+    repeated = {k: v for k, v in phrase_freq.items() if v > 1}
+
+    return repeated
+
+
+# =============================================================================
+# GRAPH VISUALIZATION
+# =============================================================================
+
+def show_graphs():
+
+    algorithms = performance_data["Algorithm"]
+
+    plt.figure(figsize=(14, 10))
+
+    # ---------------------------------------------------------
+    # EXECUTION TIME GRAPH
+    # ---------------------------------------------------------
+
+    plt.subplot(2, 2, 1)
+
+    plt.plot(
+        algorithms,
+        performance_data["Execution Time"],
+        marker='o',
+        linewidth=3
+    )
+
+    plt.title("Execution Time Comparison")
+    plt.xlabel("Algorithms")
+    plt.ylabel("Time (Seconds)")
+    plt.grid(True)
+
+    # ---------------------------------------------------------
+    # MEMORY USAGE GRAPH
+    # ---------------------------------------------------------
+
+    plt.subplot(2, 2, 2)
+
+    plt.plot(
+        algorithms,
+        performance_data["Memory Usage"],
+        marker='o',
+        linewidth=3
+    )
+
+    plt.title("Memory Usage Comparison")
+    plt.xlabel("Algorithms")
+    plt.ylabel("Memory (KB)")
+    plt.grid(True)
+
+    # ---------------------------------------------------------
+    # COMPARISONS GRAPH
+    # ---------------------------------------------------------
+
+    plt.subplot(2, 2, 3)
+
+    plt.plot(
+        algorithms,
+        performance_data["Comparisons"],
+        marker='o',
+        linewidth=3
+    )
+
+    plt.title("Character Comparisons")
+    plt.xlabel("Algorithms")
+    plt.ylabel("Comparisons")
+    plt.grid(True)
+
+    # ---------------------------------------------------------
+    # MATCHES FOUND GRAPH
+    # ---------------------------------------------------------
+
+    plt.subplot(2, 2, 4)
+
+    plt.plot(
+        algorithms,
+        performance_data["Matches"],
+        marker='o',
+        linewidth=3
+    )
+
+    plt.title("Matches Found")
+    plt.xlabel("Algorithms")
+    plt.ylabel("Number of Matches")
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
+
+# =============================================================================
+# MAIN GUI APPLICATION
+# =============================================================================
+
+class IntelligentTextAnalyzer:
+
+    def __init__(self, root):
+
+        self.root = root
+
+        self.root.title("Intelligent Text Analysis System")
+
+        self.root.geometry("1200x750")
+
+        self.root.configure(bg="#1e1e1e")
+
+        self.text_content = ""
+
+        # =====================================================
+        # TITLE
+        # =====================================================
+
+        title = tk.Label(
+            root,
+            text="INTELLIGENT TEXT ANALYSIS SYSTEM",
+            font=("Arial", 20, "bold"),
+            fg="cyan",
+            bg="#1e1e1e"
+        )
+
+        title.pack(pady=15)
+
+        # =====================================================
+        # BUTTON FRAME
+        # =====================================================
+
+        frame = tk.Frame(root, bg="#1e1e1e")
+
+        frame.pack()
+
+        # =====================================================
+        # UPLOAD BUTTON
+        # =====================================================
+
+        upload_btn = tk.Button(
+            frame,
+            text="Upload Text File",
+            font=("Arial", 12, "bold"),
+            bg="#00b894",
+            fg="white",
+            padx=15,
+            pady=8,
+            command=self.load_file
+        )
+
+        upload_btn.grid(row=0, column=0, padx=10)
+
+        # =====================================================
+        # SEARCH ENTRY
+        # =====================================================
+
+        self.search_entry = tk.Entry(
+            frame,
+            width=40,
+            font=("Arial", 13)
+        )
+
+        self.search_entry.grid(row=0, column=1, padx=10)
+
+        # =====================================================
+        # CASE SENSITIVE CHECKBOX
+        # =====================================================
+
+        self.case_var = tk.IntVar()
+
+        check = tk.Checkbutton(
+            frame,
+            text="Case Sensitive",
+            variable=self.case_var,
+            font=("Arial", 11),
+            bg="#1e1e1e",
+            fg="white",
+            selectcolor="#1e1e1e"
+        )
+
+        check.grid(row=0, column=2)
+
+        # =====================================================
+        # ANALYZE BUTTON
+        # =====================================================
+
+        analyze_btn = tk.Button(
+            frame,
+            text="Run Analysis",
+            font=("Arial", 12, "bold"),
+            bg="#0984e3",
+            fg="white",
+            padx=15,
+            pady=8,
+            command=self.run_analysis
+        )
+
+        analyze_btn.grid(row=0, column=3, padx=10)
+
+        # =====================================================
+        # OUTPUT AREA
+        # =====================================================
+
+        self.output_area = scrolledtext.ScrolledText(
+            root,
+            width=145,
+            height=35,
+            bg="#2d3436",
+            fg="white",
+            font=("Consolas", 10)
+        )
+
+        self.output_area.pack(pady=20)
+
+    # =========================================================================
+    # LOAD FILE
+    # =========================================================================
+
+    def load_file(self):
+
+        file_path = filedialog.askopenfilename(
+            filetypes=[("Text Files", "*.txt")]
+        )
+
+        if file_path:
+
+            with open(file_path, "r", encoding="utf-8") as file:
+
+                self.text_content = file.read()
+
+            messagebox.showinfo(
+                "Success",
+                f"File Loaded Successfully\n\n{os.path.basename(file_path)}"
+            )
+
+    # =========================================================================
+    # RUN ANALYSIS
+    # =========================================================================
+
+    def run_analysis(self):
+
+        self.output_area.delete(1.0, tk.END)
+
+        pattern = self.search_entry.get()
+
+        if not pattern:
+
+            messagebox.showerror(
+                "Error",
+                "Please enter search pattern"
+            )
+
+            return
+
+        text = self.text_content
+
+        if not text:
+
+            messagebox.showerror(
+                "Error",
+                "Please upload text document"
+            )
+
+            return
+
+        # -------------------------------------------------------------
+        # CASE HANDLING
+        # -------------------------------------------------------------
+
+        if not self.case_var.get():
+
+            text = text.lower()
+            pattern = pattern.lower()
+
+        # -------------------------------------------------------------
+        # CLEAR OLD PERFORMANCE DATA
+        # -------------------------------------------------------------
+
+        for key in performance_data:
+            performance_data[key].clear()
+
+        # -------------------------------------------------------------
+        # HEADER
+        # -------------------------------------------------------------
+
+        self.output_area.insert(
+            tk.END,
+            "\n" + "=" * 75 + "\n"
+        )
+
+        self.output_area.insert(
+            tk.END,
+            "          INTELLIGENT TEXT ANALYSIS REPORT\n"
+        )
+
+        self.output_area.insert(
+            tk.END,
+            "=" * 75 + "\n"
+        )
+
+        self.output_area.insert(
+            tk.END,
+            f"\nSearch Pattern : {pattern}\n"
+        )
+
+        # -------------------------------------------------------------
+        # ALGORITHMS
+        # -------------------------------------------------------------
+
+        algorithms = [
+            ("Naive Search", naive_search),
+            ("KMP Algorithm", kmp_search),
+            ("Rabin-Karp", rabin_karp_search),
+            ("Boyer-Moore", boyer_moore_search)
+        ]
+
+        # -------------------------------------------------------------
+        # EXECUTE ALL ALGORITHMS
+        # -------------------------------------------------------------
+
+        for name, algorithm in algorithms:
+
+            result = analyze_algorithm(
+                name,
+                algorithm,
+                text,
+                pattern
+            )
+
+            self.output_area.insert(
+                tk.END,
+                "\n" + "-" * 75 + "\n"
+            )
+
+            self.output_area.insert(
+                tk.END,
+                f"ALGORITHM : {name}\n"
+            )
+
+            self.output_area.insert(
+                tk.END,
+                "-" * 75 + "\n"
+            )
+
+            self.output_area.insert(
+                tk.END,
+                f"✔ Matches Found      : "
+                f"{len(result['positions'])}\n"
+            )
+
+            self.output_area.insert(
+                tk.END,
+                f"✔ Match Positions    : "
+                f"{result['positions']}\n"
+            )
+
+            self.output_area.insert(
+                tk.END,
+                f"✔ Comparisons        : "
+                f"{result['comparisons']}\n"
+            )
+
+            self.output_area.insert(
+                tk.END,
+                f"✔ Execution Time     : "
+                f"{result['execution_time']:.8f} sec\n"
+            )
+
+            self.output_area.insert(
+                tk.END,
+                f"✔ Memory Usage       : "
+                f"{result['memory_usage']:.2f} KB\n"
+            )
+
+        # -------------------------------------------------------------
+        # DUPLICATE SENTENCE DETECTION
+        # -------------------------------------------------------------
+
+        duplicates = duplicate_sentences(text)
+
+        self.output_area.insert(
+            tk.END,
+            "\n" + "=" * 75 + "\n"
+        )
+
+        self.output_area.insert(
+            tk.END,
+            "DUPLICATE SENTENCE DETECTION\n"
+        )
+
+        self.output_area.insert(
+            tk.END,
+            "=" * 75 + "\n"
+        )
+
+        if duplicates:
+
+            for sentence, count in duplicates.items():
+
+                self.output_area.insert(
+                    tk.END,
+                    f"⚠ {sentence} --> {count} times\n"
+                )
+
+        else:
+
+            self.output_area.insert(
+                tk.END,
+                "No duplicate sentences found.\n"
+            )
+
+        # -------------------------------------------------------------
+        # REPEATED PHRASE DETECTION
+        # -------------------------------------------------------------
+
+        repeated = repeated_phrases(text)
+
+        self.output_area.insert(
+            tk.END,
+            "\n" + "=" * 75 + "\n"
+        )
+
+        self.output_area.insert(
+            tk.END,
+            "REPEATED PHRASE DETECTION\n"
+        )
+
+        self.output_area.insert(
+            tk.END,
+            "=" * 75 + "\n"
+        )
+
+        if repeated:
+
+            for phrase, count in list(repeated.items())[:15]:
+
+                self.output_area.insert(
+                    tk.END,
+                    f"🔁 {phrase} --> {count} times\n"
+                )
+
+        else:
+
+            self.output_area.insert(
+                tk.END,
+                "No repeated phrases found.\n"
+            )
+
+        # -------------------------------------------------------------
+        # FINAL ANALYSIS
+        # -------------------------------------------------------------
+
+        fastest = min(
+            zip(
+                performance_data["Algorithm"],
+                performance_data["Execution Time"]
+            ),
+            key=lambda x: x[1]
+        )
+
+        minimum_comparisons = min(
+            zip(
+                performance_data["Algorithm"],
+                performance_data["Comparisons"]
+            ),
+            key=lambda x: x[1]
+        )
+
+        self.output_area.insert(
+            tk.END,
+            "\n" + "=" * 75 + "\n"
+        )
+
+        self.output_area.insert(
+            tk.END,
+            "FINAL PERFORMANCE ANALYSIS\n"
+        )
+
+        self.output_area.insert(
+            tk.END,
+            "=" * 75 + "\n"
+        )
+
+        self.output_area.insert(
+            tk.END,
+            f"🏆 Fastest Algorithm     : "
+            f"{fastest[0]}\n"
+        )
+
+        self.output_area.insert(
+            tk.END,
+            f"⚡ Fastest Time          : "
+            f"{fastest[1]:.8f} sec\n"
+        )
+
+        self.output_area.insert(
+            tk.END,
+            f"📉 Minimum Comparisons  : "
+            f"{minimum_comparisons[0]}\n"
+        )
+
+        # -------------------------------------------------------------
+        # SHOW GRAPHS
+        # -------------------------------------------------------------
+
+        show_graphs()
+
+
+# =============================================================================
+# MAIN PROGRAM
+# =============================================================================
+
+if __name__ == "__main__":
+
+    root = tk.Tk()
+
+    app = IntelligentTextAnalyzer(root)
+
+    root.mainloop()
