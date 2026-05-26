@@ -1,0 +1,50 @@
+## Tools and Libraries Used
+
+### Development Tools
+- Visual Studio Code (VS Code)
+- Python Interpreter
+- Command Prompt / Terminal
+
+---
+
+## Python Libraries Used
+
+| Library | Purpose |
+|---|---|
+| tkinter | GUI development |
+| matplotlib | Graph visualization |
+| tracemalloc | Memory usage analysis |
+| time | Execution time measurement |
+| re | Pattern and text processing |
+| collections | Frequency counting |
+| os | File handling |
+| psutil | System memory monitoring |
+
+---
+
+## Algorithms Implemented
+
+| Algorithm | Purpose |
+|---|---|
+| Naive Search | Basic sequential pattern matching |
+| KMP Algorithm | Efficient string matching using prefix table |
+| Rabin-Karp | Hash-based pattern searching |
+| Boyer-Moore | Fast searching using bad character heuristic |
+
+---
+
+## Technologies Used
+
+| Component | Technology |
+|---|---|
+| Programming Language | Python |
+| GUI Framework | Tkinter |
+| Visualization | Matplotlib |
+| IDE | VS Code |
+
+---
+
+## Installation Command
+
+```bash
+pip install matplotlib psutil
